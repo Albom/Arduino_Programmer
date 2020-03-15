@@ -52,6 +52,9 @@ void read_chip() {
   for (uint32_t addr = 0; addr < ic_size; addr++) {
     PORTF = addr >> 8;
     PORTK = addr & 0xFF;
+
+    // PORTF |= 0b01100000; // D27128 (not CMOS!)
+    
     digitalWrite(nOE, LOW);
     delayMicroseconds(10);
     Serial.write(PINC);

@@ -5,7 +5,7 @@ import hashlib
 NONE, C128, C256, C512 = (0, 1, 2, 3)
 sizes = (0, 0x4000, 0x8000, 0x10000)
 
-chip = C512
+chip = C128
 
 ic_size = sizes[chip]
 
