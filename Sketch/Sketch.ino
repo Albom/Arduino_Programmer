@@ -37,7 +37,7 @@ void loop() {
       PORTF = addr >> 8;
       PORTK = addr & 0xFF;
       digitalWrite(nOE, LOW);
-      delayMicroseconds(1);
+      delayMicroseconds(10);
       Serial.write(PINC);
       digitalWrite(nOE, HIGH);
     }
