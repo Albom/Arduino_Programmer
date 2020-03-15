@@ -4,7 +4,8 @@ const int nCE = 9;
 typedef enum {
   NONE,
   C128,
-  C256
+  C256,
+  C512
 } Chip;
 
 
@@ -34,7 +35,7 @@ void setup() {
 
 void read_chip() {
 
-  uint16_t ic_size = 0;
+  uint32_t ic_size = 0; // for future support of >64 kBytes chips
   switch (chip) {
     case C128:
       ic_size = 0x4000;
@@ -42,10 +43,13 @@ void read_chip() {
     case C256:
       ic_size = 0x8000;
       break;
+    case C512:
+      ic_size = 0x10000;
+      break;
     default:
       ic_size = 0;
   }
-  for (uint16_t addr = 0; addr < ic_size; addr++) {
+  for (uint32_t addr = 0; addr < ic_size; addr++) {
     PORTF = addr >> 8;
     PORTK = addr & 0xFF;
     digitalWrite(nOE, LOW);
@@ -53,6 +57,7 @@ void read_chip() {
     Serial.write(PINC);
     digitalWrite(nOE, HIGH);
   }
+
 }
 
 
@@ -63,6 +68,9 @@ void set_chip() {
       break;
     case '2':
       chip = C256;
+      break;
+    case '3':
+      chip = C512;
       break;
     default:
       chip = NONE;
