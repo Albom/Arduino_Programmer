@@ -30,8 +30,6 @@ void setup() {
 
   Serial.begin(115200);
 
-  Serial.print("OK");
-
 }
 
 void read_chip() {
