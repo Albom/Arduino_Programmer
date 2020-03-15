@@ -1,7 +1,18 @@
 const int nOE = 8;
 const int nCE = 9;
 
-int mode = 0;
+typedef enum {
+  NONE,
+  C128,
+  C256
+} Chip;
+
+
+int chip = NONE;
+
+const int MAX_LEN = 16;
+char command[MAX_LEN];
+
 
 void setup() {
 
@@ -19,29 +30,85 @@ void setup() {
 
   Serial.begin(115200);
 
+  Serial.print("OK");
+
+}
+
+void read_chip() {
+
+  uint16_t ic_size = 0;
+  switch (chip) {
+    case C128:
+      ic_size = 0x4000;
+      break;
+    case C256:
+      ic_size = 0x8000;
+      break;
+    default:
+      ic_size = 0;
+  }
+  for (uint16_t addr = 0; addr < ic_size; addr++) {
+    PORTF = addr >> 8;
+    PORTK = addr & 0xFF;
+    digitalWrite(nOE, LOW);
+    delayMicroseconds(10);
+    Serial.write(PINC);
+    digitalWrite(nOE, HIGH);
+  }
+}
+
+
+void set_chip() {
+  switch (command[1]) {
+    case '1':
+      chip = C128;
+      break;
+    case '2':
+      chip = C256;
+      break;
+    default:
+      chip = NONE;
+  }
+}
+
+
+void exec_command() {
+
+  switch (command[0]) {
+    case 'R':
+      read_chip();
+      break;
+    case 'S':
+      set_chip();
+      break;
+  }
 }
 
 void loop() {
-  uint16_t addr = 0;
 
-  if (Serial.available() > 0) {
-
-    int b = Serial.read();
-    if (b == 'r') {
-      mode = 1;
+  int len = 0;
+  bool currentCommand = true;
+  while (currentCommand) {
+    if (Serial.available() > 0) {
+      char c = Serial.read();
+      switch (c) {
+        case '\r':
+        case ' ':
+          break;
+        case '\n':
+          if (len > 0) {
+            command[len] = '\0';
+            exec_command();
+            currentCommand = false;
+          }
+          break;
+        default:
+          if (len < MAX_LEN - 1) {
+            command[len++] = ( c >= 'a' && c <= 'z' ) ? c - 'a' + 'A' : c;
+          }
+      }
     }
   }
 
-  if (mode == 1) {
-    for (addr = 0; addr < 0x4000; addr++) {
-      PORTF = addr >> 8;
-      PORTK = addr & 0xFF;
-      digitalWrite(nOE, LOW);
-      delayMicroseconds(10);
-      Serial.write(PINC);
-      digitalWrite(nOE, HIGH);
-    }
-  }
-  mode = 0;
 }
 
