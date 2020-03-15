@@ -3,9 +3,9 @@ import serial
 import hashlib
 
 NONE, C128, C256 = (0, 1, 2)
-sizes = [0, 0x4000, 0x8000]
+sizes = (0, 0x4000, 0x8000)
 
-chip = C128
+chip = C256
 
 ic_size = sizes[chip]
 
@@ -13,7 +13,8 @@ with serial.Serial('/dev/ttyACM0', 115200) as ser:
 
     time.sleep(1)
 
-    ans =  ser.write(b's1\n')
+    command = b''.join([b's', str(chip).encode(), b'\n'])
+    ans =  ser.write(command)
 
     ans =  ser.write(b'r\n')
 
