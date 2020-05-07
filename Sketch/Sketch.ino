@@ -48,20 +48,20 @@ byte eeprom_read_byte_64(int dev, uint16_t address) {
 
 
 
-void eeprom_write_byte_16(byte dev, word address, byte data)
+void eeprom_write_byte_16(byte dev, uint16_t address, byte data)
 {
   uint8_t addr_m = dev | ((address >> 8) & 0x07);
   Wire.beginTransmission(addr_m);
-  Wire.write((int)address);
+  Wire.write(address & 0xFF);
   Wire.write(data);
   delay(5);
   Wire.endTransmission();
 }
 
-byte eeprom_read_byte_16(int dev, word address) {
+byte eeprom_read_byte_16(int dev, uint16_t address) {
   uint8_t addr_m = dev | ((address >> 8) & 0x07);
   Wire.beginTransmission(addr_m);
-  Wire.write((int)address);
+  Wire.write(address & 0xFF);
   Wire.endTransmission();
   Wire.requestFrom(dev, (byte)1);
   byte rdata = 0;
@@ -90,9 +90,11 @@ void setup() {
   Wire.setClock(100000);
 }
 
-void read_chip() {
+
+uint32_t get_chip_size() {
 
   uint32_t ic_size = 0; // for future support of >64 kBytes chips
+
   switch (chip) {
     case I08:
       ic_size = 0x400;
@@ -118,7 +120,12 @@ void read_chip() {
     default:
       ic_size = 0;
   }
+  return ic_size;
+}
 
+void read_chip() {
+
+  uint32_t ic_size = get_chip_size();
 
   switch (chip) {
     case C128:
@@ -145,13 +152,53 @@ void read_chip() {
       }
       break;
 
+    case I08:
     case I16:
       for (uint32_t addr = 0; addr < ic_size; addr++) {
         byte c = eeprom_read_byte_16(I2C_ADDR, (uint16_t) addr);
         Serial.write(c);
       }
       break;
- 
+
+    default:
+      break;
+
+  }
+}
+
+
+
+void write_chip() {
+
+  uint32_t ic_size = get_chip_size();
+
+  switch (chip) {
+
+    case I16:
+      uint32_t addr = 0;
+      while (addr < ic_size) {
+        if (Serial.available() > 0) {
+          byte c = Serial.read();
+          eeprom_write_byte_16(I2C_ADDR, (uint16_t) addr, c);
+          Serial.write(c);
+          addr++;
+        }
+      }
+      break;
+
+
+    case I64:
+      uint32_t addr = 0;
+      while (addr < ic_size) {
+        if (Serial.available() > 0) {
+          byte c = Serial.read();
+          eeprom_write_byte_64(I2C_ADDR, (uint16_t) addr, c);
+          Serial.write(c);
+          addr++;
+        }
+      }
+      break;
+
     default:
       break;
 
@@ -197,6 +244,11 @@ void exec_command() {
       break;
     case 'S':
       set_chip();
+      break;
+    case 'W':
+      write_chip();
+      break;
+    default:
       break;
   }
 }
