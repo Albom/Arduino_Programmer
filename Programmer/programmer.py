@@ -2,10 +2,10 @@ import time
 import serial
 import hashlib
 
-NONE, C128, C256, C512 = (0, 1, 2, 3)
-sizes = (0, 0x4000, 0x8000, 0x10000)
+NONE, C128, C256, C512, I08, I16, I32, I64 = (0, 1, 2, 3, 4, 5, 6, 7)
+sizes = (0, 0x4000, 0x8000, 0x10000, 0x400, 0x800, 0x1000, 0x2000)
 
-chip = C128
+chip = I16
 
 ic_size = sizes[chip]
 
