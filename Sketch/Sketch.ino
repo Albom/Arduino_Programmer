@@ -64,8 +64,10 @@ byte eeprom_read_byte_16(int dev, uint16_t address) {
   Wire.write(address & 0xFF);
   Wire.endTransmission();
   Wire.requestFrom(dev, (byte)1);
-  byte rdata = 0;
-  if (Wire.available()) rdata = Wire.read();
+  byte rdata = 0xFF;
+  if (Wire.available()) {
+    rdata = Wire.read();
+  }
   return rdata;
 }
 
@@ -171,11 +173,12 @@ void read_chip() {
 void write_chip() {
 
   uint32_t ic_size = get_chip_size();
+  uint32_t addr = 0;
 
   switch (chip) {
 
     case I16:
-      uint32_t addr = 0;
+      
       while (addr < ic_size) {
         if (Serial.available() > 0) {
           byte c = Serial.read();
@@ -188,7 +191,6 @@ void write_chip() {
 
 
     case I64:
-      uint32_t addr = 0;
       while (addr < ic_size) {
         if (Serial.available() > 0) {
           byte c = Serial.read();
