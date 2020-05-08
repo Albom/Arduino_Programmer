@@ -10,10 +10,13 @@ typedef enum {
   C128,
   C256,
   C512,
+  I04,
   I08,
   I16,
   I32,
-  I64
+  I64,
+  I128,
+  I256
 } Chip;
 
 
@@ -98,6 +101,9 @@ uint32_t get_chip_size() {
   uint32_t ic_size = 0; // for future support of >64 kBytes chips
 
   switch (chip) {
+    case I04:
+      ic_size = 0x200;
+      break;
     case I08:
       ic_size = 0x400;
       break;
@@ -110,9 +116,11 @@ uint32_t get_chip_size() {
     case I64:
       ic_size = 0x2000;
       break;
+    case I128:
     case C128:
       ic_size = 0x4000;
       break;
+    case I256:
     case C256:
       ic_size = 0x8000;
       break;
@@ -147,13 +155,17 @@ void read_chip() {
       }
       break;
 
+    case I32:
     case I64:
+    case I128:
+    case I256:
       for (uint32_t addr = 0; addr < ic_size; addr++) {
         byte c = eeprom_read_byte_64(I2C_ADDR, (uint16_t) addr);
         Serial.write(c);
       }
       break;
 
+    case I04:
     case I08:
     case I16:
       for (uint32_t addr = 0; addr < ic_size; addr++) {
@@ -177,6 +189,7 @@ void write_chip() {
 
   switch (chip) {
 
+    case I04:
     case I08:
     case I16:
       while (addr < ic_size) {
@@ -190,7 +203,10 @@ void write_chip() {
       break;
 
 
+    case I32:
     case I64:
+    case I128:
+    case I256:
       while (addr < ic_size) {
         if (Serial.available() > 0) {
           byte c = Serial.read();
@@ -212,7 +228,16 @@ void write_chip() {
 void set_chip() {
   switch (command[1]) {
     case '1':
-      chip = C128;
+      switch (command[2]) {
+        case '\0':
+          chip = C128;
+          break;
+        case '0':
+          chip = I256;
+          break;
+        default:
+          chip = NONE;
+      }
       break;
     case '2':
       chip = C256;
@@ -221,16 +246,22 @@ void set_chip() {
       chip = C512;
       break;
     case '4':
-      chip = I08;
+      chip = I04;
       break;
     case '5':
-      chip = I16;
+      chip = I08;
       break;
     case '6':
-      chip = I32;
+      chip = I16;
       break;
     case '7':
+      chip = I32;
+      break;
+    case '8':
       chip = I64;
+      break;
+    case '9':
+      chip = I128;
       break;
     default:
       chip = NONE;
