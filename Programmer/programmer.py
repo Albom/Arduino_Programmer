@@ -9,7 +9,7 @@ chip = I16
 
 ic_size = sizes[chip]
 
-mode = 'write'
+#mode = 'write'
 mode = 'read'
 
 input_filename = 'test/rand16.bin'
