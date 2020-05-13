@@ -3,12 +3,24 @@ import serial
 import hashlib
 import sys
 from PyQt5.QtWidgets import (QApplication, QMessageBox,
-     QMainWindow, QGridLayout, QWidget, 
-     QListWidget, QLabel, QLineEdit, QPushButton)
+                             QMainWindow, QGridLayout, QWidget,
+                             QListWidget, QLabel, QLineEdit, QPushButton)
 from PyQt5.QtGui import QPixmap
 
-NONE, C128, C256, C512, I04, I08, I16, I32, I64, I128, I256 = [i for i in range(11)]
-sizes = (0, 0x4000, 0x8000, 0x10000, 0x200, 0x400, 0x800, 0x1000, 0x2000, 0x4000, 0x8000)
+NONE, C128, C256, C512, I04, I08, I16, I32, I64, I128, I256 = [
+    i for i in range(11)]
+sizes = (
+    0,
+    0x4000,
+    0x8000,
+    0x10000,
+    0x200,
+    0x400,
+    0x800,
+    0x1000,
+    0x2000,
+    0x4000,
+    0x8000)
 
 input_filename = 'test/rand8.bin'
 output_filename = 'test/out.bin'
@@ -21,9 +33,9 @@ class MainWindow(QMainWindow):
         super(MainWindow, self).__init__(*args, **kwargs)
         self.setWindowTitle("Programmer")
 
-        ic_types = ['None', '27C128', '27C256', '27C512', 
-            '24C04', '24C08', '24C16', '24C32', '24C64', 
-            '24C128', '24C256']
+        ic_types = ['None', '27C128', '27C256', '27C512',
+                    '24C04', '24C08', '24C16', '24C32', '24C64',
+                    '24C128', '24C256']
         self.ic_type_name = QListWidget()
         self.ic_type_name.addItems(ic_types)
         self.ic_type_name.setSortingEnabled(False)
@@ -68,8 +80,8 @@ class MainWindow(QMainWindow):
 
     def ic_click(self, item):
         ic_27 = ('27C128', '27C256', '27C512')
-        ic_24 = ('24C04', '24C08', '24C16', '24C32', '24C64', 
-            '24C128', '24C256')
+        ic_24 = ('24C04', '24C08', '24C16', '24C32', '24C64',
+                 '24C128', '24C256')
         if item.text() == 'None':
             self.image.setPixmap(self.image_none)
         elif item.text() in ic_27:
@@ -114,10 +126,10 @@ def prog_process(serial_port, mode, chip, filename):
             time.sleep(1)
 
             command = b''.join([b'S', str(chip).encode(), b'\n'])
-            ans =  ser.write(command)
+            ans = ser.write(command)
 
             if mode == 'read':
-                ans =  ser.write(b'R\n')
+                ans = ser.write(b'R\n')
                 data = [ser.read() for x in range(ic_size)]
 
                 data = b''.join(data)
@@ -129,7 +141,7 @@ def prog_process(serial_port, mode, chip, filename):
                 return (True, hash)
 
             elif mode == 'write':
-                ans =  ser.write(b'W\n')
+                ans = ser.write(b'W\n')
                 with open(filename, 'rb') as file:
                     data = bytearray(file.read(ic_size))
 
@@ -148,6 +160,7 @@ def prog_process(serial_port, mode, chip, filename):
 
     except serial.SerialException:
         return (False, 'Serial port error')
+
 
 if __name__ == '__main__':
 
