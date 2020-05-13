@@ -2,7 +2,7 @@ import time
 import serial
 import hashlib
 import sys
-from PyQt5.QtWidgets import (QApplication, 
+from PyQt5.QtWidgets import (QApplication, QMessageBox,
      QMainWindow, QGridLayout, QWidget, 
      QListWidget, QLabel, QLineEdit, QPushButton)
 from PyQt5.QtGui import QPixmap
@@ -24,10 +24,10 @@ class MainWindow(QMainWindow):
         ic_types = ['None', '27C128', '27C256', '27C512', 
             '24C04', '24C08', '24C16', '24C32', '24C64', 
             '24C128', '24C256']
-        ic_type_name = QListWidget()
-        ic_type_name.addItems(ic_types)
-        ic_type_name.setSortingEnabled(False)
-        ic_type_name.itemClicked.connect(self.ic_click)
+        self.ic_type_name = QListWidget()
+        self.ic_type_name.addItems(ic_types)
+        self.ic_type_name.setSortingEnabled(False)
+        self.ic_type_name.itemClicked.connect(self.ic_click)
 
         self.image_none = QPixmap('images/panel-none.png')
         self.image_27 = QPixmap('images/panel-27.png')
@@ -36,14 +36,14 @@ class MainWindow(QMainWindow):
         self.image = QLabel()
         self.image.setPixmap(self.image_none)
 
-        line_port = QLineEdit()
-        line_port.setText(serial_port)
+        self.line_port = QLineEdit()
+        self.line_port.setText(serial_port)
 
-        line_output = QLineEdit()
-        line_output.setText(output_filename)
+        self.line_output = QLineEdit()
+        self.line_output.setText(output_filename)
 
-        line_input = QLineEdit()
-        line_input.setText(input_filename)
+        self.line_input = QLineEdit()
+        self.line_input.setText(input_filename)
 
         read_btn = QPushButton('Read')
         read_btn.clicked.connect(self.read_process)
@@ -52,13 +52,13 @@ class MainWindow(QMainWindow):
 
         layout = QGridLayout()
         layout.addWidget(self.image, 0, 0)
-        layout.addWidget(ic_type_name, 0, 1, 1, 3)
+        layout.addWidget(self.ic_type_name, 0, 1, 1, 3)
         layout.addWidget(QLabel('Port: '), 1, 1)
-        layout.addWidget(line_port, 1, 2)
+        layout.addWidget(self.line_port, 1, 2)
         layout.addWidget(QLabel('Output file: '), 2, 1)
         layout.addWidget(QLabel('Input file: '), 3, 1)
-        layout.addWidget(line_output, 2, 2)
-        layout.addWidget(line_input, 3, 2)
+        layout.addWidget(self.line_output, 2, 2)
+        layout.addWidget(self.line_input, 3, 2)
         layout.addWidget(read_btn, 2, 3)
         layout.addWidget(write_btn, 3, 3)
 
@@ -78,47 +78,76 @@ class MainWindow(QMainWindow):
             self.image.setPixmap(self.image_24)
 
     def write_process(self):
-        pass
+        port = self.line_port.text()
+        mode = 'write'
+        chip = self.ic_type_name.currentRow()
+        filename = self.line_input.text()
+        r, t = prog_process(port, mode, chip, filename)
+        self.show_msg(r, t)
 
     def read_process(self):
-        pass
+        port = self.line_port.text()
+        mode = 'read'
+        chip = self.ic_type_name.currentRow()
+        filename = self.line_output.text()
+        r, t = prog_process(port, mode, chip, filename)
+        self.show_msg(r, t)
+
+    def show_msg(self, r, t):
+        msg = QMessageBox()
+        if r:
+            msg.setIcon(QMessageBox.Information)
+            msg.setText('Operation complited. Hash sum (md5):\n' + t)
+        else:
+            msg.setIcon(QMessageBox.Critical)
+            msg.setText('Error:\n' + t)
+        msg.setStandardButtons(QMessageBox.Ok)
+        msg.exec_()
 
 
 def prog_process(serial_port, mode, chip, filename):
     ic_size = sizes[chip]
 
-    with serial.Serial(serial_port, 115200) as ser:
+    try:
+        with serial.Serial(serial_port, 115200) as ser:
 
-        time.sleep(1)
+            time.sleep(1)
 
-        command = b''.join([b'S', str(chip).encode(), b'\n'])
-        ans =  ser.write(command)
+            command = b''.join([b'S', str(chip).encode(), b'\n'])
+            ans =  ser.write(command)
 
-        if mode == 'read':
-            ans =  ser.write(b'R\n')
-            data = [ser.read() for x in range(ic_size)]
+            if mode == 'read':
+                ans =  ser.write(b'R\n')
+                data = [ser.read() for x in range(ic_size)]
 
-            data = b''.join(data)
+                data = b''.join(data)
 
-            with open(filename, 'wb') as file:
-                file.write(bytes(data))
+                with open(filename, 'wb') as file:
+                    file.write(bytes(data))
 
-            hash = hashlib.md5(data).hexdigest()
-            print(hash)
-        elif mode == 'write':
-            ans =  ser.write(b'W\n')
-            with open(filename, 'rb') as file:
-                data = bytearray(file.read(ic_size))
+                hash = hashlib.md5(data).hexdigest()
+                return (True, hash)
 
-            for d in data:
-                ans = ser.write(d.to_bytes(1, 'big'))
-                rec = ser.read()
+            elif mode == 'write':
+                ans =  ser.write(b'W\n')
+                with open(filename, 'rb') as file:
+                    data = bytearray(file.read(ic_size))
 
-        else:
-            pass
+                ret = []
+                for d in data:
+                    ans = ser.write(d.to_bytes(1, 'big'))
+                    rec = ser.read()
+                    ret.append(rec)
 
-    print('OK')
+                ret = b''.join(ret)
+                hash = hashlib.md5(ret).hexdigest()
+                return (True, hash)
 
+            else:
+                return (False, None)
+
+    except serial.SerialException:
+        return (False, 'Serial port error')
 
 if __name__ == '__main__':
 
@@ -128,9 +157,3 @@ if __name__ == '__main__':
     window.show()
 
     app.exec_()
-
-
-    #chip = I08
-
-    #prog_process(serial_port, 'write', chip, input_filename)
-    #prog_process(serial_port, 'read', chip, output_filename)
