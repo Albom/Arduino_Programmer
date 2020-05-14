@@ -232,6 +232,11 @@ void write_chip() {
     case C256:
     case C512:
 
+
+      float val = 20;
+      int p = (val / 100.0) * 1023;
+      Timer3.pwm(pwmPin, p);
+
       DDRA = 0xFF;
 
       while (addr < ic_size) {
