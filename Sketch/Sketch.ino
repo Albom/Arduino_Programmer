@@ -84,10 +84,10 @@ void setup() {
   digitalWrite(nCE, LOW);
 
   DDRF = 0xFF;
-  DDRK = 0xFF;
+  DDRC = 0xFF;
 
-  DDRC = 0;
-  PORTC = 0xFF;
+  DDRA = 0;
+  PORTA = 0xFF;
 
   Serial.begin(115200);
 
@@ -144,13 +144,15 @@ void read_chip() {
 
       for (uint32_t addr = 0; addr < ic_size; addr++) {
         PORTF = addr >> 8;
-        PORTK = addr & 0xFF;
+        PORTC = addr & 0xFF;
 
-        // PORTF |= 0b01100000; // D27128
+        if (chip == C128) {
+          PORTF |= 0b01100000; // D27128
+        }
 
         digitalWrite(nOE, LOW);
         delayMicroseconds(10);
-        Serial.write(PINC);
+        Serial.write(PINA);
         digitalWrite(nOE, HIGH);
       }
       break;
