@@ -1,7 +1,13 @@
 #include <Wire.h>
+#include <TimerThree.h>
 
+const int pwmPin = 5;
 const int nOE = 8;
 const int nCE = 9;
+const int S1 = 10;
+const int S2 = 11;
+const int S3 = 12;
+
 
 const int I2C_ADDR = 0x50;
 
@@ -93,6 +99,10 @@ void setup() {
 
   Wire.begin();
   Wire.setClock(100000);
+
+  pinMode(pwmPin, OUTPUT);
+  Timer3.initialize(40);  // 40 us = 25 kHz
+
 }
 
 
@@ -142,6 +152,9 @@ void read_chip() {
     case C256:
     case C512:
 
+      DDRA = 0;
+      PORTA = 0xFF;
+
       for (uint32_t addr = 0; addr < ic_size; addr++) {
         PORTF = addr >> 8;
         PORTC = addr & 0xFF;
@@ -183,6 +196,30 @@ void read_chip() {
 }
 
 
+void high_voltage() {
+
+  int s = 0;
+  switch (chip) {
+
+    case C128:
+      s = S1;
+      break;
+    case C256:
+      s = S2;
+      break;
+    case C512:
+      s = S3;
+      break;
+    default:
+      return;
+  };
+
+  digitalWrite(s, HIGH);
+  delayMicroseconds(100);
+  digitalWrite(s, LOW);
+
+}
+
 
 void write_chip() {
 
@@ -190,6 +227,38 @@ void write_chip() {
   uint32_t addr = 0;
 
   switch (chip) {
+
+    case C128:
+    case C256:
+    case C512:
+
+      DDRA = 0xFF;
+
+      while (addr < ic_size) {
+        if (Serial.available() > 0) {
+          byte c = Serial.read();
+
+          PORTF = addr >> 8;
+          PORTC = addr & 0xFF;
+
+          //if (chip == C128) {
+          //  PORTF |= 0b01100000; // D27128
+          //}
+
+          digitalWrite(nOE, LOW);
+          delayMicroseconds(10);
+
+          PORTA = c;
+
+          digitalWrite(nOE, HIGH);
+
+          high_voltage();
+
+          Serial.write(c);
+          addr++;
+        }
+      }
+      break;
 
     case I04:
     case I08:
